@@ -73,101 +73,101 @@ class BIDSDataLoader:
         subjects = get_entity_vals(self.bids_root, 'subject')
         return subjects
 
-    # def load_session_data(self, subject):
-    #     """
-    #     Load session data for a given subject.
-    #     Returns a dictionary with electrodes info and runs.
-
-    #     Parameters:
-    #     - subject (str): The subject ID.
-
-    #     Returns:
-    #     - dict: A dictionary containing the following keys:
-    #         - "electrodes_tsv" (pd.DataFrame): The electrodes information as a pandas DataFrame.
-    #         - "runs" (list): The list of runs for the subject.
-    #     """
-    #     # Update the path for the current subject and specific task
-    #     # patient_bids_path = self.bids_path.copy().update(subject=subject, datatype="ieeg", task="SPESclin")
-    #     # patient_bids_path = self.bids_path.copy().update(subject=subject, session="1", datatype="ieeg", task="SPESclin")
-    #     # print(f"Bids patrh: {patient_bids_path}")
-
-    #     patient_bids_path = self.bids_path.copy().update(subject=subject, session="1", datatype="ieeg")
-        
-    #     # Find all .vhdr files for the subject and task
-    #     vhdr_paths = patient_bids_path.copy().update(task=None, run=None, suffix="ieeg", extension=".vhdr").match()
-        
-    #     # Only if it ends in .vhdr
-    #     vhdr_paths = [vhdr_path for vhdr_path in vhdr_paths if str(vhdr_path.fpath)[-5:] == ".vhdr"]
-
-    #     # Find all .vhdr files for the subject and task
-    #     if not vhdr_paths:
-    #         raise ValueError(f"No .vhdr files found for subject {subject}")
-
-    #     # Extract the sessionf from the first .vhdr file's path
-    #     session = vhdr_paths[0]._session
-
-    #     # Get the path to the electrodes file for the current session
-    #     electrode_path = patient_bids_path.copy().update(task=None, session=session, extension='.tsv', suffix='electrodes').match()[0].fpath
-        
-    #     # Load electrodes file as pandas DataFrame
-    #     electrodes_tsv = pd.read_csv(electrode_path, sep="\t", index_col=0)
-
-    #     # List all runs by extracting the run number from each .vhdr file's path
-    #     runs = [vhdr_path._run for vhdr_path in vhdr_paths]
-
-    #     return {
-    #         "electrodes_tsv": electrodes_tsv,
-    #         "runs": runs
-    #     }
-
     def load_session_data(self, subject):
         """
         Load session data for a given subject.
+        Returns a dictionary with electrodes info and runs.
+
+        Parameters:
+        - subject (str): The subject ID.
+
+        Returns:
+        - dict: A dictionary containing the following keys:
+            - "electrodes_tsv" (pd.DataFrame): The electrodes information as a pandas DataFrame.
+            - "runs" (list): The list of runs for the subject.
         """
+        # Update the path for the current subject and specific task
+        # patient_bids_path = self.bids_path.copy().update(subject=subject, datatype="ieeg", task="SPESclin")
+        # patient_bids_path = self.bids_path.copy().update(subject=subject, session="1", datatype="ieeg", task="SPESclin")
+        # print(f"Bids patrh: {patient_bids_path}")
 
-        # Start from root with only subject + session
-        base = self.bids_path.copy().update(
-            subject=subject,
-            session="1",
-            datatype="ieeg",
-            task="SPESclin"
-        )
+        patient_bids_path = self.bids_path.copy().update(subject=subject, session="1", datatype="ieeg")
+        
+        # Find all .vhdr files for the subject and task
+        vhdr_paths = patient_bids_path.copy().update(task=None, run=None, suffix="ieeg", extension=".vhdr").match()
+        
+        # Only if it ends in .vhdr
+        vhdr_paths = [vhdr_path for vhdr_path in vhdr_paths if str(vhdr_path.fpath)[-5:] == ".vhdr"]
 
-        # Find all .tsv recordings for this subject/session
-        tsv_paths = (
-            base.copy()
-            .update(suffix="channels", extension=".tsv")
-            .match()
-        )
+        # Find all .vhdr files for the subject and task
+        if not vhdr_paths:
+            raise ValueError(f"No .vhdr files found for subject {subject}")
 
-        if not tsv_paths:
-            raise ValueError(f"No .tsv files found for subject {subject}")
+        # Extract the sessionf from the first .vhdr file's path
+        session = vhdr_paths[0]._session
 
-        # Determine session from matched files
-        session = tsv_paths[0].session
-
-        # Load electrodes.tsv
-        electrode_path = (
-            base.copy()
-            .update(
-                task=None,
-                session=session,
-                suffix="electrodes",
-                extension=".tsv",
-            )
-            .match()[0]
-            .fpath
-        )
-
+        # Get the path to the electrodes file for the current session
+        electrode_path = patient_bids_path.copy().update(task=None, session=session, extension='.tsv', suffix='electrodes').match()[0].fpath
+        
+        # Load electrodes file as pandas DataFrame
         electrodes_tsv = pd.read_csv(electrode_path, sep="\t", index_col=0)
 
-        # Extract run numbers
-        runs = [path.run for path in tsv_paths]
+        # List all runs by extracting the run number from each .vhdr file's path
+        runs = [vhdr_path._run for vhdr_path in vhdr_paths]
 
         return {
             "electrodes_tsv": electrodes_tsv,
             "runs": runs
         }
+
+    # def load_session_data(self, subject):
+    #     """
+    #     Load session data for a given subject.
+    #     """
+
+    #     # Start from root with only subject + session
+    #     base = self.bids_path.copy().update(
+    #         subject=subject,
+    #         session="1",
+    #         datatype="ieeg",
+    #         task="SPESclin"
+    #     )
+
+    #     # Find all .tsv recordings for this subject/session
+    #     tsv_paths = (
+    #         base.copy()
+    #         .update(suffix="channels", extension=".tsv")
+    #         .match()
+    #     )
+
+    #     if not tsv_paths:
+    #         raise ValueError(f"No .tsv files found for subject {subject}")
+
+    #     # Determine session from matched files
+    #     session = tsv_paths[0].session
+
+    #     # Load electrodes.tsv
+    #     electrode_path = (
+    #         base.copy()
+    #         .update(
+    #             task=None,
+    #             session=session,
+    #             suffix="electrodes",
+    #             extension=".tsv",
+    #         )
+    #         .match()[0]
+    #         .fpath
+    #     )
+
+    #     electrodes_tsv = pd.read_csv(electrode_path, sep="\t", index_col=0)
+
+    #     # Extract run numbers
+    #     runs = [path.run for path in tsv_paths]
+
+    #     return {
+    #         "electrodes_tsv": electrodes_tsv,
+    #         "runs": runs
+    #     }
 
     def load_run_data(self, subject, run):
         """
@@ -189,9 +189,6 @@ class BIDSDataLoader:
 
         # Find all .vhdr files for the subject and task
         vhdr_paths = patient_bids_path.copy().update(suffix="ieeg", extension=".vhdr").match()
-        test = patient_bids_path.copy().update(suffix="ieeg", extension=".vhdr").fpath
-        print(test)
-        print(Path(test).exists())
         # Only if it ends in .vhdr
         # vhdr_paths = [vhdr_path for vhdr_path in vhdr_paths if str(vhdr_path.fpath)[-5:] == ".vhdr"]
 
@@ -204,7 +201,7 @@ class BIDSDataLoader:
         # Get the path to the channels file for the current run
         channels_path = patient_bids_path.copy().update(extension=".tsv", suffix="channels").match()[0].fpath
 
-        eeg = mne.io.read_raw_brainvision(vhdr_path, verbose=False, preload=True) # TODO
+        eeg = mne.io.read_raw_brainvision(vhdr_path, verbose=False, preload=False) # TODO
         events_df = pd.read_csv(tsv_path, sep="\t", index_col=0)
         channels_df = pd.read_csv(channels_path, sep="\t", index_col=0)
 
@@ -390,6 +387,241 @@ class StimulationDataProcessor:
             return None        
 
         return response_dfs
+    
+    def process_run_data_streaming(self, raw, events_df, channels_df, subject):
+        """
+        Streaming-safe SPES processing for huge BrainVision files.
+        """
+
+        # ---------------------
+        # 1. Filter to included channels
+        # ---------------------
+        good_chans = channels_df[channels_df.status_description == "included"].index.tolist()
+        raw.pick(good_chans)
+
+        # ---------------------
+        # 2. Enable memory-mapped filtering
+        # ---------------------
+        #raw.load_data(method="memmap")  # temp .dat backing file
+        #raw.filter(1, 150, n_jobs='auto')
+
+        # ---------------------
+        # 3. Extract event structures
+        # ---------------------
+        stim_events = events_df[events_df.trial_type == "electrical_stimulation"].copy()
+        stim_events = stim_events[
+            stim_events["sample_start"] < raw.n_times
+        ]
+
+        # Artefacts and seizures
+        artefacts_all = events_df[
+            (events_df.trial_type == "artefact") &
+            (events_df.electrodes_involved_onset == "all")
+        ]
+
+        focal_artefacts = events_df[
+            (events_df.trial_type == "artefact") &
+            (events_df.electrodes_involved_onset != "all")
+        ]
+
+        seizures = events_df[events_df.trial_type == "seizure"]
+
+        # ---------------------
+        # 4. Remove events overlapping global artefacts or seizures
+        # ---------------------
+        def overlaps(a, b):
+            return not (a["sample_end"] < b["sample_start"] or
+                        a["sample_start"] > b["sample_end"])
+
+        global_mask = []
+        seizure_mask = []
+        for _, ev in stim_events.iterrows():
+            has_global = any(overlaps(ev, art) for _, art in artefacts_all.iterrows())
+            has_seiz = any(overlaps(ev, sz) for _, sz in seizures.iterrows())
+            global_mask.append(has_global)
+            seizure_mask.append(has_seiz)
+
+        valid_mask = ~(np.array(global_mask) | np.array(seizure_mask))
+        stim_events = stim_events[valid_mask]
+
+        # ---------------------
+        # 5. Canonicalize stimulation site identifiers
+        # ---------------------
+        stim_events["electrical_stimulation_site"] = (
+            stim_events["electrical_stimulation_site"]
+            .apply(process_stimulation_sites)
+            .astype("category")
+        )
+
+        categories = stim_events["electrical_stimulation_site"].cat.categories
+        cat_map = dict(enumerate(categories))
+
+        stim_events["stim_cat"] = stim_events["electrical_stimulation_site"].cat.codes
+
+        # ---------------------
+        # 6. Identify channels with focal artefact per event
+        # ---------------------
+        focal_list = []
+        for _, ev in stim_events.iterrows():
+            found = None
+            for _, art in focal_artefacts.iterrows():
+                if overlaps(ev, art):
+                    found = art.electrodes_involved_onset
+                    break
+            focal_list.append(found)
+
+        focal_list = np.array(focal_list)
+        stim_events["focal_remove"] = focal_list
+
+        # ---------------------
+        # 7. Convert to structured array for epoch extraction
+        # ---------------------
+        # Format: sample_start, dummy_zero, stim_cat
+        array = stim_events[["sample_start", "focal_remove", "stim_cat"]].copy()
+        array["zero"] = 0
+        result_array = array[["sample_start", "zero", "stim_cat"]].values
+
+        # ---------------------
+        # 8. Group by stimulation category, extract streaming epochs
+        # ---------------------
+        dfs = []
+        for event_id in np.unique(result_array[:, 2]):
+            rm_chans = set(
+                ch
+                for v in stim_events.loc[stim_events.stim_cat == event_id, "focal_remove"]
+                if isinstance(v, str)
+                for ch in v.split(',')
+            )
+
+            df = self._extract_epochs_streaming(
+                raw, result_array, event_id, cat_map, subject, rm_chans
+            )
+            if df is not None:
+                dfs.append(df)
+
+        if len(dfs) == 0:
+            print(f"Subject {subject}: no usable SPES epochs.")
+            return None
+
+        return pd.concat(dfs, ignore_index=True)
+
+    
+    def _extract_epochs_streaming(self, raw, result_array, event_id, category_mapping, subject, remove_chans):
+        # Determine stimulated electrodes
+        stimulated_electrodes = category_mapping[event_id].split('-')
+        stimulated_electrodes.sort()
+    
+        # Pick recording channels (exclude stimulated + bad)
+        recording_channels = [
+            ch for ch in raw.info['ch_names']
+            if ch not in stimulated_electrodes and ch not in remove_chans
+        ]
+        pick_idx = mne.pick_channels(raw.info['ch_names'], include=recording_channels)
+
+        sf = raw.info['sfreq']
+
+        # Extract only events that match current event_id
+        these_events = result_array[result_array[:, 2] == event_id][:, 0]  # sample_start column
+        if len(these_events) < 5:
+            return None
+
+        # Epoch window
+        pre = int((self.tmin - 1) * sf)  # because old code used tmin-1
+        post = int(self.tmax * sf)
+
+        # Storage for incremental mean/std
+        running_sum = None
+        running_sum_sq = None
+        n_epochs = 0
+
+        for sample_start in these_events:
+            start = int(sample_start + pre)
+            stop  = int(sample_start + post)
+
+            # Extract raw data chunk
+            epoch = raw.get_data(start=start, stop=stop, picks=pick_idx)
+            # epoch shape: (n_channels, n_times)
+
+            #epoch = mne.filter.filter_data(epoch, sfreq=sf, l_freq=1, h_freq=150, verbose=False)
+
+            # ---- FILTER SAFELY: pad → filter → unpad ----
+            pad_len = 4096  # safe for 1 Hz HP at 2048 Hz, can be tuned
+
+            # Pad (reflective)
+            epoch_pad = np.pad(epoch, ((0, 0), (pad_len, pad_len)), mode='reflect')
+
+            # Filter padded
+            epoch_pad = mne.filter.filter_data(
+                epoch_pad,
+                sfreq=sf,
+                l_freq=1,
+                h_freq=150,
+                verbose=False
+            )
+
+            # Remove padding
+            epoch = epoch_pad[:, pad_len:-pad_len]
+
+            # Apply baseline correction (baseline ends at -0.1s)
+            baseline_end = int((self.tmin) * sf)  # baseline end relative to cropped epoch
+            baseline = epoch[:, :baseline_end].mean(axis=1, keepdims=True)
+            epoch = epoch - baseline
+
+            # Now crop to desired tmin → tmax
+            crop_start = int((self.tmin - (self.tmin - 1)) * sf)  
+            # eq: old_pre = (tmin-1)*sf, crop_start removes the extra 1 sec
+            epoch = epoch[:, crop_start:]
+
+            
+            sf_new = 512  # target sampling rate
+            n_samples_expected = int((self.tmax - self.tmin) * sf_new)
+
+            # Resample to 512 Hz
+            epoch = mne.filter.resample(epoch, down=sf/512.0, npad='auto')
+
+            # Crop/pad to exact length
+            n_ch, n_t = epoch.shape
+            if n_t < n_samples_expected:
+                # pad at end with zeros
+                pad_width = n_samples_expected - n_t
+                epoch = np.pad(epoch, ((0,0),(0,pad_width)), mode='constant')
+            elif n_t > n_samples_expected:
+                # crop at end
+                epoch = epoch[:, :n_samples_expected]
+
+            # Accumulate statistics
+            if running_sum is None:
+                n_ch, n_t = epoch.shape
+                running_sum = np.zeros((n_ch, n_t), dtype=np.float64)
+                running_sum_sq = np.zeros((n_ch, n_t), dtype=np.float64)
+
+            running_sum += epoch
+            running_sum_sq += epoch * epoch
+            n_epochs += 1
+
+        # Compute mean and standard deviation
+        mean_response = running_sum / n_epochs
+        var = (running_sum_sq / n_epochs) - (mean_response ** 2)
+        std_response = np.sqrt(np.maximum(var, 0))
+
+        # Construct DataFrames like original code
+        df_mean = pd.DataFrame(mean_response.astype('float32'))
+        df_std  = pd.DataFrame(std_response.astype('float32'))
+
+        df_mean.insert(0, 'subject', subject)
+        df_mean.insert(1, 'recording', recording_channels)
+        df_mean.insert(2, 'stim_1', stimulated_electrodes[0])
+        df_mean.insert(3, 'stim_2', stimulated_electrodes[1])
+        df_mean.insert(4, 'metric', 'mean')
+
+        df_std.insert(0, 'subject', subject)
+        df_std.insert(1, 'recording', recording_channels)
+        df_std.insert(2, 'stim_1', stimulated_electrodes[0])
+        df_std.insert(3, 'stim_2', stimulated_electrodes[1])
+        df_std.insert(4, 'metric', 'std')
+
+        return pd.concat([df_mean, df_std], ignore_index=True)
+
 
     def _extract_epochs(self, eeg, result_array, event_id, category_mapping, subject, remove_chans):
         """
@@ -485,6 +717,16 @@ class DatasetCreator:
         response_df = self.response_df[self.response_df.subject == subject]
         response_df = response_df[response_df.metric == metric]
 
+        # Standardize response_df channel names
+        response_df.recording = response_df.recording.str.upper()
+        response_df.stim_1 = response_df.stim_1.str.upper()
+        response_df.stim_2 = response_df.stim_2.str.upper()
+
+        # Standardize electrodes_df index
+        electrodes_df.index = electrodes_df.index.str.upper()
+
+
+
         try:
             # Calculate stimulation and recording coordinates
             stim_1_coords = np.array([[electrodes_df[electrodes_df.index == stimulated_electrode].x, electrodes_df[electrodes_df.index == stimulated_electrode].y, electrodes_df[electrodes_df.index == stimulated_electrode].z] for stimulated_electrode in response_df.stim_1])
@@ -511,6 +753,7 @@ class DatasetCreator:
 
         # Get channels used for both stimulation and recording
         recording_stim_channels = set(response_df.recording.unique()).intersection(set(response_df.stim_2.unique()).union(set(response_df.stim_1.unique())))
+        #print(f"Recording stim channels: {recording_stim_channels}")
 
         channels_recording_trials, channels_stim_trials = [], []
         
@@ -537,8 +780,16 @@ class DatasetCreator:
             channels_stim_trials.append(np.array(channel_stim_trials))
 
             if labels:
+                electrode_row = electrodes_df[electrodes_df.index == channel]
+                if not electrode_row.empty:
+                    channel_soz.append(electrode_row.soz.iloc[0] == "yes")
+                else:
+                    # Skip or assign a default value
+                    print(f"Warning: channel {channel} not found in electrodes_df")
+                    continue  # skip this channel entirely
+
                 # Add label for current channel
-                channel_soz.append(electrodes_df[electrodes_df.index == channel].soz.iloc[0] == "yes")
+                # channel_soz.append(electrodes_df[electrodes_df.index == channel].soz.iloc[0] == "yes")
 
             electrode_coords.append([electrodes_df[electrodes_df.index == channel].x.iloc[0], electrodes_df[electrodes_df.index == channel].y.iloc[0], electrodes_df[electrodes_df.index == channel].z.iloc[0]])
         
@@ -549,6 +800,7 @@ class DatasetCreator:
         
         # For recording channels
         max_recording_rows = max(array.shape[0] for array in channels_recording_trials)
+        #print(f"for metric {metric} we have length: {len(channel_recording_trials)}")
         X_recording = pad_and_stack(channels_recording_trials, max_recording_rows).astype(np.float32)
 
         # For stim channels
