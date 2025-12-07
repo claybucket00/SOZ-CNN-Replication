@@ -4,6 +4,7 @@ from mne_bids import BIDSPath, get_entity_vals
 import numpy as np
 import pyreadr
 from pathlib import Path
+from fractions import Fraction
 
 def pad_and_stack(arrays, max_rows, pad_value=0):
     """
@@ -101,7 +102,8 @@ class BIDSDataLoader:
 
         # Find all .vhdr files for the subject and task
         if not vhdr_paths:
-            raise ValueError(f"No .vhdr files found for subject {subject}")
+            print(f"No .vhdr files found for subject {subject}")
+            return None
 
         # Extract the sessionf from the first .vhdr file's path
         session = vhdr_paths[0]._session
@@ -295,6 +297,7 @@ class StimulationDataProcessor:
         # Filter channels
         chans_to_use = channels_df[channels_df.status_description == "included"].index.tolist()
         eeg.pick(chans_to_use)
+        eeg.load_data()
 
         # Filter EEG data
         eeg.filter(1, 150, n_jobs=-1, method='fir', fir_design='firwin')  # TODO
@@ -545,22 +548,30 @@ class StimulationDataProcessor:
             #epoch = mne.filter.filter_data(epoch, sfreq=sf, l_freq=1, h_freq=150, verbose=False)
 
             # ---- FILTER SAFELY: pad → filter → unpad ----
-            pad_len = 4096  # safe for 1 Hz HP at 2048 Hz, can be tuned
+            # pad_len = 4096  # safe for 1 Hz HP at 2048 Hz, can be tuned
 
-            # Pad (reflective)
-            epoch_pad = np.pad(epoch, ((0, 0), (pad_len, pad_len)), mode='reflect')
+            # # Pad (reflective)
+            # epoch_pad = np.pad(epoch, ((0, 0), (pad_len, pad_len)), mode='reflect')
 
-            # Filter padded
-            epoch_pad = mne.filter.filter_data(
-                epoch_pad,
+            # # Filter padded
+            # epoch_pad = mne.filter.filter_data(
+            #     epoch_pad,
+            #     sfreq=sf,
+            #     l_freq=1,
+            #     h_freq=150,
+            #     verbose=False
+            # )
+
+            # # Remove padding
+            # epoch = epoch_pad[:, pad_len:-pad_len]
+
+            epoch = mne.filter.filter_data(
+                epoch,
                 sfreq=sf,
                 l_freq=1,
                 h_freq=150,
                 verbose=False
             )
-
-            # Remove padding
-            epoch = epoch_pad[:, pad_len:-pad_len]
 
             # Apply baseline correction (baseline ends at -0.1s)
             baseline_end = int((self.tmin) * sf)  # baseline end relative to cropped epoch
@@ -574,10 +585,20 @@ class StimulationDataProcessor:
 
             
             sf_new = 512  # target sampling rate
-            n_samples_expected = int((self.tmax - self.tmin) * sf_new)
+            #n_samples_expected = int((self.tmax - self.tmin) * sf_new)
+            n_samples_expected = 509 # Enforcing as original code produces different sizes
 
             # Resample to 512 Hz
-            epoch = mne.filter.resample(epoch, down=sf/512.0, npad='auto')
+            #epoch = mne.filter.resample(epoch, down=sf/512.0, npad='auto')
+            orig_sf = int(round(sf))   # be careful: use integer sampling rate
+            target_sf = 512
+            ratio = Fraction(target_sf, orig_sf).limit_denominator()
+            up = ratio.numerator
+            down = ratio.denominator
+
+            # do the resample along the time axis (axis=1 for shape (n_ch, n_t))
+            epoch = mne.filter.resample(epoch, up=up, down=down, axis=1, npad='auto')
+
 
             # Crop/pad to exact length
             n_ch, n_t = epoch.shape

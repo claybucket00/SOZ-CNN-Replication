@@ -2,6 +2,9 @@ from create_dataset_utils import *
 from tqdm import tqdm
 import argparse
 from pathlib import Path
+import glob
+import os
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -22,20 +25,32 @@ def main():
     
     # Define the BIDSDataLoader and StimulationDataProcessor
     bids_loader = BIDSDataLoader(bids_root=bids_root)
-    subjects = bids_loader.load_subjects()
+    # subjects = bids_loader.load_subjects()
 
     # Save the final response dataframe to a CSV file
     reponse_df_filepath = '../data/response_df.csv'
     response_df = pd.read_csv(reponse_df_filepath)
     
     datasetcreator = DatasetCreator(response_df)
+
+    # Grab the subject_id strings from the df
+    subjects = response_df['subject'].unique()
+    
+    
+    paths = glob.glob('../data/mean/X_recording_*.npy')
+    processed_subjects = [
+        os.path.basename(p)
+          .replace('X_recording_', '')
+          .replace('.npy', '')
+        for p in paths
+    ]
+
+    new_subjects = [item for item in subjects if item not in set(processed_subjects)]
     
     # Assuming you have loaded run_data using BIDSDataLoader
-    count = 0
-    for subject in tqdm(subjects):
-        if count >= 5:
-            break
-        count += 1
+    for subject in tqdm(new_subjects):
+        if subject in processed_subjects:
+            continue
         session_data = bids_loader.load_session_data(subject)
         datasetcreator.process_for_analysis(subject, session_data['electrodes_tsv'])
 

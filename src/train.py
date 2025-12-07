@@ -59,7 +59,7 @@ def train_model(net, train_loader, val_loader, optimizer, criterion, save_path, 
         if epochs_without_improvement >= patience:
             break
 
-    load_model = torch.load(save_path)
+    load_model = torch.load(save_path, weights_only=False)
     net.load_state_dict(load_model['model_state_dict'])
 
     return net
@@ -96,7 +96,8 @@ def train_and_evaluate(model_name, fold, learning_rate, seed, mode, device, mean
     optimizer = optim.AdamW(net.parameters(), lr=learning_rate)
 
     # Train the model
-    model_save_path = f'../models/{("optuna" if mode == "gridsearch" else "best")}_model_{model_name}_seed_{seed}_fold_{fold}.pth'
+    #model_save_path = f'../models/{("optuna" if mode == "gridsearch" else "best")}_model_{model_name}_seed_{seed}_fold_{fold}.pth'
+    model_save_path = f'/content/drive/MyDrive/models/{("optuna" if mode == "gridsearch" else "best")}_model_{model_name}_seed_{seed}_fold_{fold}.pth'
     net = train_model(net, train_loader, val_loader, optimizer, criterion, save_path=model_save_path, device=device, num_epochs=num_epochs)
 
     if mode == 'gridsearch':

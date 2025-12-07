@@ -26,6 +26,7 @@ def get_split_paths(paths, split_indices, fold):
         'test': np.array(paths)[split_indices[fold]['test']]
     }
 
+
 def X_from_paths(X_file_paths, mean=None, std=None, chans=None):
     """Load X from the given file paths and normalize separately."""
     # Load arrays to determine the maximum size along the second dimension

@@ -22,28 +22,54 @@ def main():
     
     # Define the BIDSDataLoader and StimulationDataProcessor
     bids_loader = BIDSDataLoader(bids_root=bids_root)
-    subjects = bids_loader.load_subjects()
     stim_processor = StimulationDataProcessor(tmin=0.009, tmax=1)
+    #subjects = bids_loader.load_subjects()
     
     # Create an empty list to store the response data
-    response_df = []
+    response_df_batch = []
+
+
+    # Grab the subject_id strings from the existing df
+    # processed_subjects = response_df['subject'].unique()
+
+    subjects_to_add = [
+    'ccepAgeUMCU46',
+    'ccepAgeUMCU47',
+    'ccepAgeUMCU48',
+    'ccepAgeUMCU49',
+    'ccepAgeUMCU51',
+    'ccepAgeUMCU52',
+    'ccepAgeUMCU53',
+    'ccepAgeUMCU55',
+    'ccepAgeUMCU57',
+    'ccepAgeUMCU58',
+    'ccepAgeUMCU59',
+    'ccepAgeUMCU60',
+    'ccepAgeUMCU61',
+    'ccepAgeUMCU63',
+    'ccepAgeUMCU65',
+    'ccepAgeUMCU69'
+    ]    
     
-    # Iterate over each subject and process the data, adding to the list
     count = 0
-    for subject in tqdm(subjects):
-        # Testing on subset
-        if subject == 'ccepAgeUMCU09':
-            continue
-        if count >= 20:
+    # Iterate over each subject and process the data, adding to the list
+    for subject in tqdm(subjects_to_add):
+        # Batching
+        if count >= 1:
             break
+        count += 1
+        # if subject in processed_subjects:
+        #     continue
         # Load the session data
         session_data = bids_loader.load_session_data(subject)
+
+        if not session_data:
+            continue
 
         # Check if electrodes contain SOZ
         contains_SOZ = (session_data['electrodes_tsv']['soz'] == 'yes').any()
         if not contains_SOZ:
             continue
-        count += 1
     
         # Create an empty list to store the response data for each run for current patient
         patient_response_df = []
@@ -68,25 +94,22 @@ def main():
         patient_response_df = pd.concat([pd.concat(combine_stats(group)) for _, group in grouped])
     
         # Add the subject to the dataframe
-        response_df.append(patient_response_df)
+        response_df_batch.append(patient_response_df)
     
     # Concatenate the response data across subjects
-    response_df = pd.concat(response_df)
+    response_df_batch = pd.concat(response_df_batch)
+
+    reponse_df_filepath = '../data/response_df.csv'
+    response_df = pd.read_csv(reponse_df_filepath)
+
+    response_df = pd.concat([response_df, response_df_batch], ignore_index=True)
     
     # Save the final response dataframe to a CSV file
     reponse_df_filepath = '../data/response_df.csv'
     response_df.to_csv(reponse_df_filepath)
-    
-    # datasetcreator = DatasetCreator(response_df)
-    
-    # # Assuming you have loaded run_data using BIDSDataLoader
-    # count = 0
-    # for subject in tqdm(subjects):
-    #     if count >= 5:
-    #         break
-    #     count += 1
-    #     session_data = bids_loader.load_session_data(subject)
-    #     datasetcreator.process_for_analysis(subject, session_data['electrodes_tsv'])
+
+    num_of_subjects = len(response_df['subject'].unique())
+    print(f'Final number of subjects: {num_of_subjects}')
 
 if __name__ == "__main__":
     main()

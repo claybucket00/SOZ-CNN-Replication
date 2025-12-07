@@ -343,6 +343,10 @@ def get_model_instance(model_name, **kwargs):
         return SPES_Transformer(num_classes=1, net_configs=[{'type': 'convergent', 'mean': True, 'std': True}], **kwargs)
     elif model_name == 'Transformer (base)':
         return SPES_Transformer(num_classes=1, net_configs=[{'type': 'convergent', 'mean': True, 'std': False}], mlp_embedding=False, **kwargs)
+    elif model_name == 'Transformer (divergent_all)':
+        return SPES_Transformer(num_classes=1, net_configs=[{'type': 'divergent', 'mean': True, 'std': True}], **kwargs)
+    elif model_name == 'Transformer (divergent_base)':
+        return SPES_Transformer(num_classes=1, net_configs=[{'type': 'divergent', 'mean': True, 'std': False}], mlp_embedding=False, **kwargs)
     elif model_name == 'CNN (divergent)':
         return SPES_ResNet(num_classes=1, **kwargs)
     elif model_name == 'CNN (convergent)':
@@ -366,7 +370,7 @@ def load_model_from_path(model_name, model_path, device, **hyperparams):
     """
     model = get_model_instance(model_name, **hyperparams).to(device)
 
-    loaded_model = torch.load(model_path)
+    loaded_model = torch.load(model_path, weights_only=False)
     model.load_state_dict(loaded_model['model_state_dict'])
 
     return model
