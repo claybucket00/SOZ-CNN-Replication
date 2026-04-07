@@ -3,5 +3,10 @@ Memory performance was benchmarked using [memray](https://github.com/bloomberg/m
 
 Non-streaming:
 
+<img src="./non_streaming.png" alt="Failed to load image. See PNGs in benchmark folder." width=400 height = 200>
+
 
 Streaming: 
+
+<img src="./streaming.png" alt="Failed to load image. See PNGs in benchmark folder." width=400 height = 200>
+
