@@ -66,9 +66,6 @@ class BIDSDataLoader:
     def __init__(self, bids_root):
         self.bids_root = bids_root
         self.bids_path = BIDSPath(root=bids_root)
-        # d = Path(self.bids_path.directory)
-        # print("Directory exists:", d.exists())
-        # print("Directory contents:", list(d.iterdir()) if d.exists() else "Missing")
 
     def load_subjects(self):
         subjects = get_entity_vals(self.bids_root, 'subject')
@@ -88,10 +85,6 @@ class BIDSDataLoader:
             - "runs" (list): The list of runs for the subject.
         """
         # Update the path for the current subject and specific task
-        # patient_bids_path = self.bids_path.copy().update(subject=subject, datatype="ieeg", task="SPESclin")
-        # patient_bids_path = self.bids_path.copy().update(subject=subject, session="1", datatype="ieeg", task="SPESclin")
-        # print(f"Bids patrh: {patient_bids_path}")
-
         patient_bids_path = self.bids_path.copy().update(subject=subject, session="1", datatype="ieeg")
         
         # Find all .vhdr files for the subject and task
@@ -121,55 +114,6 @@ class BIDSDataLoader:
             "electrodes_tsv": electrodes_tsv,
             "runs": runs
         }
-
-    # def load_session_data(self, subject):
-    #     """
-    #     Load session data for a given subject.
-    #     """
-
-    #     # Start from root with only subject + session
-    #     base = self.bids_path.copy().update(
-    #         subject=subject,
-    #         session="1",
-    #         datatype="ieeg",
-    #         task="SPESclin"
-    #     )
-
-    #     # Find all .tsv recordings for this subject/session
-    #     tsv_paths = (
-    #         base.copy()
-    #         .update(suffix="channels", extension=".tsv")
-    #         .match()
-    #     )
-
-    #     if not tsv_paths:
-    #         raise ValueError(f"No .tsv files found for subject {subject}")
-
-    #     # Determine session from matched files
-    #     session = tsv_paths[0].session
-
-    #     # Load electrodes.tsv
-    #     electrode_path = (
-    #         base.copy()
-    #         .update(
-    #             task=None,
-    #             session=session,
-    #             suffix="electrodes",
-    #             extension=".tsv",
-    #         )
-    #         .match()[0]
-    #         .fpath
-    #     )
-
-    #     electrodes_tsv = pd.read_csv(electrode_path, sep="\t", index_col=0)
-
-    #     # Extract run numbers
-    #     runs = [path.run for path in tsv_paths]
-
-    #     return {
-    #         "electrodes_tsv": electrodes_tsv,
-    #         "runs": runs
-    #     }
 
     def load_run_data(self, subject, run):
         """
@@ -662,6 +606,17 @@ class StimulationDataProcessor:
         epochs = mne.Epochs(eeg, result_array, event_id=event_id, tmin=self.tmin - 1, tmax=self.tmax, picks=recording_channels, preload=True, baseline=(None, -0.1))
         epochs.crop(tmin=self.tmin)
         epochs.resample(512)
+
+        # Magic number from data sampled at 2048 Hz, resampled to 512 Hz
+        n_expected_samples = 1528 #TODO
+
+        # Ensure all epochs have the expected number of samples
+        n_t = epochs._data.shape[-1]
+        if n_t > n_expected_samples:
+            epochs._data = epochs._data[:, :, :n_expected_samples]
+        elif n_t < n_expected_samples:
+            pad_width = n_expected_samples - n_t
+            epochs._data = np.pad(epochs._data, ((0, 0), (0, 0), (0, pad_width)), mode='constant')
 
         # If less than 5 trials, return None
         if (epochs._data.shape[0]) < 5:

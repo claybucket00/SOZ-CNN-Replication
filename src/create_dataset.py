@@ -33,6 +33,7 @@ def main():
     for subject in tqdm(subjects):
         # Testing on subset
         if subject == 'ccepAgeUMCU09':
+            # Subject's data is corrupted, skipping
             continue
         if count >= 20:
             break

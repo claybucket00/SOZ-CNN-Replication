@@ -245,7 +245,7 @@ class MSResNet(nn.Module):
 
         out = torch.cat([x, y, z], dim=1)
 
-        out = out[:, :, 0]#.squeeze() (jamie: squeeze caused errors when batch size = 1)
+        out = out[:, :, 0]#.squeeze()
         out = self.drop(out)
         # out1 = self.fc(out)
 

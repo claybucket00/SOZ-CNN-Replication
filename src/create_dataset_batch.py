@@ -9,6 +9,7 @@ def main():
     )
 
     parser.add_argument('bids_root', type=Path, help="Root directory of the BIDS dataset.")
+    parser.add_argument('subjects_file', type=Path, default=None, help="Optional file containing list of subjects to process.")
     args = parser.parse_args()
 
     bids_root = args.bids_root
@@ -23,41 +24,26 @@ def main():
     # Define the BIDSDataLoader and StimulationDataProcessor
     bids_loader = BIDSDataLoader(bids_root=bids_root)
     stim_processor = StimulationDataProcessor(tmin=0.009, tmax=1)
-    #subjects = bids_loader.load_subjects()
-    
+
+    # File path to response_df CSV
+    response_df_filepath = Path('../data/response_df.csv')
     # Create an empty list to store the response data
     response_df_batch = []
 
-
-    # Grab the subject_id strings from the existing df
-    # processed_subjects = response_df['subject'].unique()
-
-    subjects_to_add = [
-    'ccepAgeUMCU46',
-    'ccepAgeUMCU47',
-    'ccepAgeUMCU48',
-    'ccepAgeUMCU49',
-    'ccepAgeUMCU51',
-    'ccepAgeUMCU52',
-    'ccepAgeUMCU53',
-    'ccepAgeUMCU55',
-    'ccepAgeUMCU57',
-    'ccepAgeUMCU58',
-    'ccepAgeUMCU59',
-    'ccepAgeUMCU60',
-    'ccepAgeUMCU61',
-    'ccepAgeUMCU63',
-    'ccepAgeUMCU65',
-    'ccepAgeUMCU69'
-    ]    
+    subjects = []
+    if args.subjects_file:
+        if not args.subjects_file.exists():
+            raise ValueError(f"The specified subjects file does not exist: {args.subjects_file}")
+        with open(args.subjects_file, 'r') as f:
+            subjects = [line.strip() for line in f if line.strip()]
+    else:
+        subjects = bids_loader.load_subjects()
     
-    count = 0
+
+    print(f'Subjects to process: {subjects}')   
+    
     # Iterate over each subject and process the data, adding to the list
-    for subject in tqdm(subjects_to_add):
-        # Batching
-        if count >= 1:
-            break
-        count += 1
+    for subject in tqdm(subjects):
         # if subject in processed_subjects:
         #     continue
         # Load the session data
@@ -99,14 +85,17 @@ def main():
     # Concatenate the response data across subjects
     response_df_batch = pd.concat(response_df_batch)
 
-    reponse_df_filepath = '../data/response_df.csv'
-    response_df = pd.read_csv(reponse_df_filepath)
-
-    response_df = pd.concat([response_df, response_df_batch], ignore_index=True)
+    response_df = None
+    if response_df_filepath.exists() and response_df_filepath.is_file():
+        # Read existing response dataframe and append new data
+        response_df = pd.read_csv(response_df_filepath)
+        response_df = pd.concat([response_df, response_df_batch], ignore_index=True)
+    else:
+        response_df = response_df_batch
+    
     
     # Save the final response dataframe to a CSV file
-    reponse_df_filepath = '../data/response_df.csv'
-    response_df.to_csv(reponse_df_filepath)
+    response_df.to_csv(response_df_filepath)
 
     num_of_subjects = len(response_df['subject'].unique())
     print(f'Final number of subjects: {num_of_subjects}')
