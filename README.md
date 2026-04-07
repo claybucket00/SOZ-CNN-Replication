@@ -64,7 +64,7 @@ Our replication project:
 Exact paths may differ slightly depending on how you organise the project, but the main components are:
 
 * `benchmark/`
-  Benchmarking to determine memory improvements when used the streaming approach to pre-processing the ECoG dataset.
+  Benchmarking data which measures the reduction in memory consumption when using the streaming approach for pre-processing the ECoG dataset.
 
 * `data/`
   Raw and intermediate data. Assumes:
